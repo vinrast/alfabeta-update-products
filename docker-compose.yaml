@@ -1,0 +1,30 @@
+version: '3.5'
+services:
+  server:
+    tty: true
+    stdin_open: true
+    restart: always
+    depends_on:
+      - db
+    build:
+      dockerfile: Dockerfile
+      context: .
+    env_file: .env
+    volumes:
+      - /app/node_modules
+      - ./src:/app/src
+    command: ['npm', 'run', 'dev']
+    ports:
+      - '2023:2023'
+
+  db:
+    image: postgres:13.2
+    env_file: .env
+    restart: always
+    ports:
+      - '15432:5432'
+    volumes:
+      - priceupdaterdb:/var/lib/postgresql/data
+
+volumes:
+  priceupdaterdb:

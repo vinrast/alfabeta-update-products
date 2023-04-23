@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "pretty": true,
+    "sourceMap": true,
+    "target": "es6",
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "__tests__/*": ["__tests__/*"],
+      "@src/*": ["src/*"]
+    },
+    "experimentalDecorators": true,
+    "plugins": [
+      {
+        "transform": "@zerollup/ts-transform-paths",
+        "tryLoadJs": true
+      }
+    ]
+  },
+  "include": ["src/**/*.ts", "__tests__/**/*.ts"],
+  "exclude": ["node_modules"],
+  // "extends": "ts-node/node16/tsconfig.json",
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  }
+}
