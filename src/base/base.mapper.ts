@@ -5,7 +5,6 @@ import { BaseDto } from './protocols';
 export class BaseMapper {
   static toDomain(raw: any): BaseModel {
     return new BaseModel({
-      id: raw.id || uuidGenerator(),
       id_alfabeta: raw.alfabetaId,
       id_pharol: raw.localId,
       price: raw.price,
