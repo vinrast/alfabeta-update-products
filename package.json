@@ -2,10 +2,10 @@
   "name": "alfabeta-price-updater",
   "version": "1.0.0",
   "description": "Actualizador de precios de Alfabeta",
-  "main": "index.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "prebuild": "rm -rf dist/",
-    "build": "ttsc -P ./tsconfig.json",
+    "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "predev": "sequelize db:migrate",
     "dev": "nodemon --watch 'src/**' --ext 'ts,json' --ignore 'src/**/*.spec.ts' --exec 'ts-node -r tsconfig-paths/register ./src/server.ts' --ignore 'node_modules'",
     "migrate": "sequelize db:migrate",
@@ -39,12 +39,12 @@
     "@types/faker": "5.1.5",
     "@types/jest": "^29.4.0",
     "@types/node": "^18.14.1",
+    "@types/nodemailer": "^6.4.0",
     "@types/sequelize": "4.28.9",
     "@types/superagent": "4.1.10",
     "@types/supertest": "^2.0.11",
     "@types/validator": "13.1.0",
     "@types/validatorjs": "3.15.0",
-    "@zerollup/ts-transform-paths": "1.7.18",
     "factory-girl": "5.0.4",
     "faker": "5.1.0",
     "nodemon": "^2.0.20",
@@ -52,6 +52,7 @@
     "supertest": "4.0.2",
     "ts-jest": "29.0.5",
     "ts-node": "^10.9.1",
+    "tsc-alias": "^1.8.6",
     "tsconfig-paths": "3.9.0",
     "tslib": "^2.5.0",
     "ttypescript": "^1.5.12",
@@ -72,6 +73,7 @@
     "soap": "^1.0.0",
     "uuidv4": "6.2.6",
     "validatorjs": "3.22.1",
-    "xml2js": "^0.4.23"
+    "xml2js": "^0.4.23",
+    "nodemailer": "^6.6.1"
   }
 }

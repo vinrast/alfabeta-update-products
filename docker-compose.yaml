@@ -22,7 +22,7 @@ services:
     env_file: .env
     restart: always
     ports:
-      - '15432:5432'
+      - '15440:5432'
     volumes:
       - priceupdaterdb:/var/lib/postgresql/data
 

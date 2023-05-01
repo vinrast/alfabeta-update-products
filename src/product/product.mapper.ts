@@ -110,7 +110,15 @@ export class ProductMapper {
   static toUpdateProductPriceCSV(product: any): string {
     return `${product.alfabetaId}, ${product.localId || ''}, ${
       product.currentPrice
-    }, ${product.previusPrice} \n`;
+    }, ${product.previousPrice} \n`;
+  }
+
+  static toNotHomologatedProductCSV(product: any): string {
+    return `${product.alfabetaId} \n`;
+  }
+
+  static toHomologatedNonUpgradeableProductCSV(product: any): string {
+    return `${product.alfabetaId},${product.localId},${product.saleTypeId},  \n`;
   }
 
   static toUpdateProductStatusCSV(product: any): string {

@@ -1,4 +1,4 @@
-import { IGetBaseRepository, IUpdateBaseRepository } from '@src/base/protocols';
+import { IUpdateBaseRepository } from '@src/base/protocols';
 import { removeFileHelper } from './../../shared/utils/helpers/remove-file-helper';
 import { TransactionBuilder } from './../../shared/database/transaction-builder';
 import { ProductMapper } from './../product.mapper';
@@ -11,7 +11,6 @@ import {
   IGetProductRepository,
   IUpdateProductRepository,
   IUpdateProductsUseCase,
-  ProductDto,
 } from '../protocols';
 import { unzipToTextConverter } from '@src/shared/utils/helpers/unzip-to-text-converter';
 import { convertToJson } from '@src/shared/utils/helpers/xml-json-converter';
@@ -36,12 +35,16 @@ import { DrugPotencyMapper } from '@src/drug-potency/drug-potency.mapper';
 import { ProductModel } from '../product.model';
 import {
   productsCreatedCSVHeaders,
+  productsHomologatedNonUpgradeableCSVHeaders,
+  productsNotHomologatedCSVHeaders,
   productsUpdatedCSVHeaders,
   productsUpdatedStatusCSVHeaders,
 } from '@src/shared/data';
 import { addRowCSVGenerator } from '@src/shared/utils/helpers/add-row-csv-generator';
 import { Transaction } from 'sequelize/types';
 import { throwDatabaseError } from '@src/shared/utils/helpers/throw-helpers';
+import { IEmailService } from '@src/shared/services/infrastructure/mailer/mailer.service';
+import { resultFilesTemplate } from '@src/shared/services/infrastructure/mailer/templates/result-files-template.mailer';
 
 export class UpdateProductsUseCase implements IUpdateProductsUseCase {
   private controls: Map<number, ControlModel> = new Map();
@@ -61,15 +64,23 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     'productos-actualizados.csv',
     'productos-activados.csv',
     'productos-desactivados.csv',
+    'productos-no-homologados.csv',
+    'productos-homologados-1-7.csv',
   ];
+  productsUpdated: ProductModel[];
+  productsCreated: ProductModel[];
+  productsActivated: ProductModel[];
+  productsDeactivated: ProductModel[];
+  productsNotHomologated: ProductModel[];
+  productsHomologatedNonUpgradeable: ProductModel[];
 
   constructor(
     private soapService: ISoapService,
     private getProductRepository: IGetProductRepository,
-    private getBaseProductRepository: IGetBaseRepository,
     private createProductUseCase: ICreateProductUseCase,
     private updateProductRepository: IUpdateProductRepository,
-    private updateBaseRepository: IUpdateBaseRepository
+    private updateBaseRepository: IUpdateBaseRepository,
+    private mailerService: IEmailService
   ) {}
 
   public async execute() {
@@ -77,10 +88,13 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
       'INICIO DE LA ACTUALIZACION DE PRODUCTOS --> ',
       new Date().toLocaleString()
     );
-    const productsUpdated = [];
-    const productsCreated = [];
-    const productsActivated = [];
-    const productsDeactivated = [];
+
+    this.productsUpdated = [];
+    this.productsCreated = [];
+    this.productsActivated = [];
+    this.productsDeactivated = [];
+    this.productsNotHomologated = [];
+    this.productsHomologatedNonUpgradeable = [];
 
     try {
       await this.soapService.createClient(this.getParamsSoapConnection());
@@ -128,6 +142,17 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
           if (existProduct) {
             const isApprovedProduct = existProduct.getDataValue('base');
 
+            if (!isApprovedProduct) {
+              addRowCSVGenerator(
+                ProductMapper.toNotHomologatedProductCSV({
+                  alfabetaId: product.id_alfabeta,
+                }),
+                this.PATH_STORAGE,
+                this.csvFilesNames[4]
+              );
+              this.productsNotHomologated.push(product);
+            }
+
             if (isApprovedProduct) {
               const productPriceUpdated = await this.updatePriceProduct(
                 product,
@@ -136,23 +161,18 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
               );
 
               if (productPriceUpdated) {
-                this.setAuxiliariesValuesForUpdateProduct(
-                  existProduct,
-                  product
-                );
-
                 addRowCSVGenerator(
                   ProductMapper.toUpdateProductPriceCSV({
                     alfabetaId: product.id_alfabeta,
                     localId: isApprovedProduct.id_pharol,
                     currentPrice: product.price,
-                    previousPrice: product.getDataValue('previousPrice'),
+                    previousPrice: existProduct.price,
                   }),
                   this.PATH_STORAGE,
                   this.csvFilesNames[1]
                 );
 
-                productsUpdated.push(product);
+                this.productsUpdated.push(product);
               }
 
               if (product.status !== existProduct.status) {
@@ -162,7 +182,7 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
                   transaction
                 );
                 if (product.status === 'A') {
-                  productsActivated.push(product);
+                  this.productsActivated.push(product);
                   addRowCSVGenerator(
                     ProductMapper.toUpdateProductStatusCSV({
                       alfabetaId: product.id_alfabeta,
@@ -174,7 +194,7 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
                 }
 
                 if (product.status === 'I') {
-                  productsDeactivated.push(product);
+                  this.productsDeactivated.push(product);
                   addRowCSVGenerator(
                     ProductMapper.toUpdateProductStatusCSV({
                       alfabetaId: product.id_alfabeta,
@@ -198,7 +218,7 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
               this.csvFilesNames[0]
             );
 
-            productsCreated.push(product);
+            this.productsCreated.push(product);
           }
           await transaction.commit();
         } catch (error) {
@@ -206,13 +226,9 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
         }
       }
 
-      this.showResults(
-        totalProducts,
-        productsUpdated,
-        productsCreated,
-        productsActivated,
-        productsDeactivated
-      );
+      this.showResults(totalProducts);
+
+      this.sendEmail(totalProducts);
 
       console.info(
         'FIN DE LA ACTUALIZACION DE PRODUCTOS --> ',
@@ -328,6 +344,10 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     headersData.push(this.getHeadersCSV(productsUpdatedCSVHeaders));
     headersData.push(this.getHeadersCSV(productsUpdatedStatusCSVHeaders));
     headersData.push(this.getHeadersCSV(productsUpdatedStatusCSVHeaders));
+    headersData.push(this.getHeadersCSV(productsNotHomologatedCSVHeaders));
+    headersData.push(
+      this.getHeadersCSV(productsHomologatedNonUpgradeableCSVHeaders)
+    );
 
     this.csvFilesNames.forEach((fileName, index) => {
       removeFileHelper(this.PATH_STORAGE, fileName);
@@ -500,13 +520,6 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     });
   }
 
-  private setAuxiliariesValuesForUpdateProduct(
-    productSaved: ProductModel,
-    product: ProductModel
-  ) {
-    product.setDataValue('previousPrice', productSaved.price);
-  }
-
   private setAuxiliariesValuesForCreateProduct(product: ProductModel) {
     product.setDataValue(
       'laboratory',
@@ -552,18 +565,20 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     );
   }
 
-  private showResults(
-    totalProducts: any[],
-    productsUpdated: ProductDto[],
-    productsCreated: ProductDto[],
-    productsActivated: ProductDto[],
-    productsDeactivated: ProductDto[]
-  ) {
+  private showResults(totalProducts: any[]) {
     console.log('PRODUCTOS RECIBIDOS --> ', totalProducts.length);
-    console.log('PRODUCTOS ACTUALIZADOS --> ', productsUpdated.length);
-    console.log('PRODUCTOS CREADOS --> ', productsCreated.length);
-    console.log('PRODUCTOS ACTIVADOS --> ', productsActivated.length);
-    console.log('PRODUCTOS DESACTIVADOS --> ', productsDeactivated.length);
+    console.log('PRODUCTOS ACTUALIZADOS --> ', this.productsUpdated.length);
+    console.log('PRODUCTOS CREADOS --> ', this.productsCreated.length);
+    console.log('PRODUCTOS ACTIVADOS --> ', this.productsActivated.length);
+    console.log('PRODUCTOS DESACTIVADOS --> ', this.productsDeactivated.length);
+    console.log(
+      'PRODUCTOS NO HOMOLOGADOS --> ',
+      this.productsNotHomologated.length
+    );
+    console.log(
+      'PRODUCTOS HOMOLOGADOS NO ACTUALIZABLES --> ',
+      this.productsHomologatedNonUpgradeable.length
+    );
   }
 
   private async updatePriceProduct(
@@ -572,8 +587,24 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     transaction: Transaction
   ) {
     try {
-      if (product.id_sale_type == 1 || product.id_sale_type == 7) return false;
-      if (product.price == savedProduct.price) return false;
+      if (product.id_sale_type == 1 || product.id_sale_type == 7) {
+        addRowCSVGenerator(
+          ProductMapper.toHomologatedNonUpgradeableProductCSV({
+            alfabetaId: product.id_alfabeta,
+            localId: savedProduct.getDataValue('base').id_pharol,
+            saleTypeId: product.id_sale_type,
+          }),
+          this.PATH_STORAGE,
+          this.csvFilesNames[5]
+        );
+        this.productsHomologatedNonUpgradeable.push(savedProduct);
+        return false;
+      }
+      if (
+        product.price == savedProduct.price &&
+        savedProduct.getDataValue('base').price
+      )
+        return false;
 
       await this.updateBaseRepository.update(
         product.id_alfabeta,
@@ -609,5 +640,78 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     } catch (error) {
       console.error('ERROR AL ACTUALIZAR EL ESTADO DEL PRODUCTO: ' + id);
     }
+  }
+
+  private sendEmail(totalProducts: any[]) {
+    const date = new Date();
+    const dateInChile = date.toLocaleString('en-US', {
+      timeZone: 'America/Santiago',
+    });
+    const attachments = [];
+
+    if (this.productsCreated.length) {
+      attachments.push({
+        filename: this.csvFilesNames[0],
+        path: `${this.PATH_STORAGE}/${this.csvFilesNames[0]}`,
+      });
+    }
+
+    if (this.productsUpdated.length) {
+      attachments.push({
+        filename: this.csvFilesNames[1],
+        path: `${this.PATH_STORAGE}/${this.csvFilesNames[1]}`,
+      });
+    }
+
+    if (this.productsActivated.length) {
+      attachments.push({
+        filename: this.csvFilesNames[2],
+        path: `${this.PATH_STORAGE}/${this.csvFilesNames[2]}`,
+      });
+    }
+
+    if (this.productsDeactivated.length) {
+      attachments.push({
+        filename: this.csvFilesNames[3],
+        path: `${this.PATH_STORAGE}/${this.csvFilesNames[3]}`,
+      });
+    }
+
+    if (this.productsNotHomologated.length) {
+      attachments.push({
+        filename: this.csvFilesNames[4],
+        path: `${this.PATH_STORAGE}/${this.csvFilesNames[4]}`,
+      });
+    }
+
+    if (this.productsHomologatedNonUpgradeable.length) {
+      attachments.push({
+        filename: this.csvFilesNames[5],
+        path: `${this.PATH_STORAGE}/${this.csvFilesNames[5]}`,
+      });
+    }
+
+    const templateMail = resultFilesTemplate({
+      date: dateInChile,
+      totalProducts: totalProducts.length,
+      newProducts: this.productsCreated.length,
+      updatedProducts: this.productsUpdated.length,
+      activatedProducts: this.productsActivated.length,
+      deactivatedProducts: this.productsDeactivated.length,
+      notHomologatedProducts: this.productsNotHomologated.length,
+      homologatedProductsNonUpgraded:
+        this.productsHomologatedNonUpgradeable.length,
+    });
+    this.mailerService.sendEmail({
+      destinyEmail: [
+        'vinrast@gmail.com',
+        // 'diego.carciente@pharol.cl',
+        // 'sistemas@benvida.com.ar',
+        // 'pmartinez@benvida.com.ar',
+      ],
+      html: templateMail,
+      subject: 'Resultados de la actualización de productos',
+      attachments,
+    });
   }
 }

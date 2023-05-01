@@ -14,12 +14,7 @@
       "@src/*": ["src/*"]
     },
     "experimentalDecorators": true,
-    "plugins": [
-      {
-        "transform": "@zerollup/ts-transform-paths",
-        "tryLoadJs": true
-      }
-    ]
+    "plugins": []
   },
   "include": ["src/**/*.ts", "__tests__/**/*.ts"],
   "exclude": ["node_modules"],

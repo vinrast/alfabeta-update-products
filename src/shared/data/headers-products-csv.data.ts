@@ -45,3 +45,11 @@ export const productsUpdatedCSVHeaders = [
 ];
 
 export const productsUpdatedStatusCSVHeaders = ['ID alfabeta', 'ID pharol'];
+
+export const productsHomologatedNonUpgradeableCSVHeaders = [
+  'ID alfabeta',
+  'ID pharol',
+  'Tipo de Venta',
+];
+
+export const productsNotHomologatedCSVHeaders = ['ID alfabeta'];
