@@ -16,8 +16,7 @@ jobs:
       - name: 'Autenticacion en Google Cloud'
         uses: 'google-github-actions/auth@v1'
         with:
-          workload_identity_provider: gcp
-          service_account: ${{ secrets.GCP_SA_EMAIL }}
+          credentials: ${{ secrets.GCP_SA_KEY }}
 
       - name: Configurar la CLI de Google Cloud
         uses: google-github-actions/setup-gcloud@v1
@@ -41,7 +40,6 @@ jobs:
             --platform managed \
             --region southamerica-east1 \
             --allow-unauthenticated
-
 
 # This workflow build and push a Docker container to Google Artifact Registry and deploy it on Cloud Run when a commit is pushed to the "main" branch
 #
