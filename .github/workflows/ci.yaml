@@ -13,12 +13,11 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v2
 
-      - id: 'auth'
-      name: 'Autenticacion en Google Cloud'
-      uses: 'google-github-actions/auth@v1'
-      with:
-        workload_identity_provider: gcp
-        service_account: ${{ secrets.GCP_SA_EMAIL }}
+      - name: 'Autenticacion en Google Cloud'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          workload_identity_provider: gcp
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
 
       - name: Configurar la CLI de Google Cloud
         uses: google-github-actions/setup-gcloud@v1
