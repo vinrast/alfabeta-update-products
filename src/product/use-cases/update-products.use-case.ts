@@ -705,7 +705,7 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     this.mailerService.sendEmail({
       destinyEmail: [
         'vinrast@gmail.com',
-        // 'diego.carciente@pharol.cl',
+        'diego.carciente@pharol.cl',
         // 'sistemas@benvida.com.ar',
         // 'pmartinez@benvida.com.ar',
       ],
