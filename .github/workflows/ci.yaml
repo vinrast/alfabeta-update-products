@@ -139,7 +139,7 @@ jobs:
         uses: 'docker/login-action@v1'
         with:
           username: ${{ secrets.GCP_SA_EMAIL }}
-          password: '${{ steps.auth.outputs.access_token }}'
+          password: ${{ steps.auth.outputs.access_token }}
           registry: 'gcr.io'
 
       - name: Build and Push Container
