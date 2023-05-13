@@ -36,10 +36,10 @@ jobs:
           push: true
           tags: gcr.io/${{ secrets.GCP_PROJECT_ID }}/alfabeta-price-updater:${{ github.sha }}
           secrets: |
+            REGISTRY: gcr.io
             REGISTRY_USERNAME: _json_key
             REGISTRY_PASSWORD: ${{ secrets.GCP_SA_KEY_JSON }}
-
-
+            REGISTRY_EMAIL: ${{secrets.GCP_SA_EMAIL }}
 
       - name: Desplegar en Google Cloud Run
         run: |
