@@ -35,7 +35,7 @@ jobs:
           context: .
           push: true
           tags: gcr.io/${{ secrets.GCP_PROJECT_ID }}/alfabeta-price-updater:${{ github.sha }}
-          secrets:
+          secrets: |
             REGISTRY_USERNAME: _json_key
             REGISTRY_PASSWORD: ${{ secrets.GCP_SA_KEY_JSON }}
 
