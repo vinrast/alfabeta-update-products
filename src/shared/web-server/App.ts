@@ -32,6 +32,11 @@ export default class App {
   afterMiddlewares() {}
 
   routes() {
+    this.application.get('/', (req, res) => {
+      res.json({
+        message: 'Actualizador de productos de Alfabeta ' + new Date(),
+      });
+    });
     this.application.use(`${this.baseUrl}/products`, productRouter);
   }
 
