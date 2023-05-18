@@ -129,7 +129,8 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
       const totalProducts =
         data.respuesta.basecompleta[0].articulos[0].articulo;
 
-      for await (const productUnformatted of totalProducts) {
+      for (const productUnformatted of totalProducts) {
+        console.time('TIEMPO DE PROCESAMIENTO DE PRODUCTO');
         const transaction = await TransactionBuilder.build();
         try {
           const product = this.formatProduct(productUnformatted);
@@ -221,6 +222,7 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
             this.productsCreated.push(product);
           }
           await transaction.commit();
+          console.timeEnd('TIEMPO DE PROCESAMIENTO DE PRODUCTO');
         } catch (error) {
           await transaction.rollback();
         }
@@ -235,7 +237,11 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
         new Date().toLocaleString()
       );
     } catch (error) {
-      console.error('error updating products: ', error);
+      console.error(
+        'ERROR ACTUALIZANDO PRODUCTOS -->',
+        new Date().toLocaleString(),
+        error.message
+      );
     }
   }
 
