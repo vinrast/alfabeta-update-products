@@ -9,6 +9,7 @@ import { ISoapService } from '@src/shared/services/protocols';
 import {
   ICreateProductUseCase,
   IGetProductRepository,
+  IGetProductsRepository,
   IUpdateProductRepository,
   IUpdateProductsUseCase,
 } from '../protocols';
@@ -57,6 +58,7 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
   private saleTypes: Map<number, SaleTypeModel> = new Map();
   private supplyWays: Map<number, SupplyWayModel> = new Map();
   private drugPotencies: Map<number, DrugPotencyModel> = new Map();
+  private productsSaved: Map<number, ProductModel> = new Map();
   private PATH_STORAGE = 'src/storage';
   private DATA_FILE_NAME = 'data.zip';
   private csvFilesNames = [
@@ -80,7 +82,8 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     private createProductUseCase: ICreateProductUseCase,
     private updateProductRepository: IUpdateProductRepository,
     private updateBaseRepository: IUpdateBaseRepository,
-    private mailerService: IEmailService
+    private mailerService: IEmailService,
+    private getProductsRepository: IGetProductsRepository
   ) {}
 
   public async execute() {
@@ -133,6 +136,9 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
       );
       this.setHeadersCSVFiles();
 
+      console.time('MAPEO DE PRODUCTOS GUARDADOS');
+      await this.setProductsSavedMap();
+      console.timeEnd('MAPEO DE PRODUCTOS GUARDADOS');
       const totalProducts =
         data.respuesta.basecompleta[0].articulos[0].articulo;
       console.info(
@@ -144,12 +150,8 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
         const transaction = await TransactionBuilder.build();
         try {
           const product = this.formatProduct(productUnformatted);
-          const existProduct = await this.getProductRepository.getOne(
-            {
-              alfabetaId: product.id_alfabeta,
-            },
-            transaction
-          );
+          const existProduct = this.productsSaved.get(product.id_alfabeta);
+
           if (existProduct) {
             const isApprovedProduct = existProduct.getDataValue('base');
 
@@ -369,6 +371,22 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
       removeFileHelper(this.PATH_STORAGE, fileName);
       addRowCSVGenerator(headersData[index], this.PATH_STORAGE, fileName);
     });
+  }
+
+  private async setProductsSavedMap() {
+    try {
+      const productsSaved = await this.getProductsRepository.getAll();
+      productsSaved.map((product) => {
+        this.productsSaved.set(product.id_alfabeta, product);
+      });
+
+      return;
+    } catch (error) {
+      console.error(
+        'ERROR AL SETEAR LOS PRODUCTOS GUARDADOS -->',
+        error.message
+      );
+    }
   }
 
   private setMapsAuxliaryModels(data: Array<any>, index: number) {

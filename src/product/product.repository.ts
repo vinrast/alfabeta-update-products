@@ -51,7 +51,7 @@ export class ProductRepository
       const query = this.createQueryObject();
       const queryFormat = this.formatQuery(filter, query);
       queryFormat.offset = queryFormat.offset ?? 0;
-      queryFormat.limit = queryFormat.limit ?? 50;
+      queryFormat.limit = queryFormat.limit;
       queryFormat.order = [['created_at', 'DESC']];
       return await ProductModel.findAll(queryFormat);
     } catch (error) {

@@ -16,6 +16,7 @@ export const updateProductsUseCaseFactory = () => {
     createProductUseCaseFactory(),
     productRepository,
     baseRepository,
-    mailerServiceFactory()
+    mailerServiceFactory(),
+    productRepository
   );
 };

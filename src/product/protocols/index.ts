@@ -10,3 +10,4 @@ export * from './i-update-products-use-case';
 export * from './i-create-product-use-case';
 export * from './product.dto';
 export * from './i-update-product-repository';
+export * from './i-get-products-use-case';

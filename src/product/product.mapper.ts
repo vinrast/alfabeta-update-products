@@ -7,7 +7,7 @@ export class ProductMapper {
   static toDomain(raw: ProductDto): ProductModel {
     return new ProductModel({
       id: raw.id || uuidGenerator(),
-      id_alfabeta: raw.alfabetaId,
+      id_alfabeta: parseInt(raw.alfabetaId.toString()),
       effective_date: raw.effectiveDate,
       price: raw.price,
       status: raw.status,

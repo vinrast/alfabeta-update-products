@@ -5,7 +5,7 @@ import { BaseDto } from './protocols';
 export class BaseMapper {
   static toDomain(raw: any): BaseModel {
     return new BaseModel({
-      id_alfabeta: raw.alfabetaId,
+      id_alfabeta: parseInt(raw.alfabetaId.toString()),
       id_pharol: raw.localId,
       price: raw.price,
       percentage: raw.percentage,
