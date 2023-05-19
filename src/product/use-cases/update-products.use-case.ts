@@ -118,17 +118,27 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
       const data = await convertToJson(
         unzipToTextConverter(`${this.PATH_STORAGE}/${this.DATA_FILE_NAME}`)
       );
-
+      console.info(
+        'DATOS CONVERTIDOS A JSON --> ',
+        new Date().toLocaleString()
+      );
       if (!this.dataWithoutError(data)) {
         return;
       }
 
       this.setAllMapsAuxiliary(data);
+      console.info(
+        'CONFIGURADOS DATOS AUXILIARES --> ',
+        new Date().toLocaleString()
+      );
       this.setHeadersCSVFiles();
 
       const totalProducts =
         data.respuesta.basecompleta[0].articulos[0].articulo;
-
+      console.info(
+        'INICIO DE PROCESAMIENTO DE PRODUCTOS --> ',
+        new Date().toLocaleString()
+      );
       for (const productUnformatted of totalProducts) {
         console.time('TIEMPO DE PROCESAMIENTO DE PRODUCTO');
         const transaction = await TransactionBuilder.build();
