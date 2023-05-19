@@ -4,6 +4,7 @@ export const convertToJson = (xmlString: string) => {
   try {
     var cleanedString = xmlString.replace('\ufeff', '');
     const parser = new xml2js.Parser();
+    console.log('llegando a convertToJson');
     return parser.parseStringPromise(cleanedString);
   } catch (error) {
     console.log(error);

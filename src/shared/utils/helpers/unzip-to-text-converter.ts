@@ -4,6 +4,7 @@ export const unzipToTextConverter = (path: string) => {
   try {
     const zip = new AdmZip(path);
     const zipEntries = zip.getEntries();
+    console.log('zipEntries: ', zipEntries[0]);
     return zip.readAsText(zipEntries[0]);
   } catch (error) {
     console.error('ERROR CONVIRTIENDO ARCHIVO COMPRIMIDO A TEXTO: ', error);
