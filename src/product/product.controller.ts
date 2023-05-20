@@ -24,8 +24,10 @@ export default class ProductController {
 
   async updateAlfabetaProducts(req: Request, res: Response) {
     try {
-      this.updateProductsUseCase.execute();
-      return res.json({ message: 'Actualizador de precios iniciado' });
+      await this.updateProductsUseCase.execute();
+      return res.json({
+        message: 'Email enviado con resultado de la actualización',
+      });
     } catch (error) {
       if (error instanceof ErrorHandler) {
         console.error(error.showOnConsole());

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import nodemailerSendgrid from 'nodemailer-sendgrid';
 import { Attachment } from 'nodemailer/lib/mailer';
 
 export interface IEmailService {
@@ -16,18 +17,17 @@ export interface IEmailService {
 }
 
 const MAILER_CONFIG = {
-  USER: (process.env.MAILER_USER as string) || 'develop@atmansystems.com',
-  PASS: (process.env.MAILER_PASS as string) || 'lcfjvloaznzqkrdz',
+  USER: (process.env.MAILER_USER as string) || '',
+  PASS: (process.env.MAILER_PASS as string) || '',
+  CONTACT_US_EMAIL: (process.env.CONTACT_US_EMAIL as string) || '',
 };
 
 export class MailerInfraService implements IEmailService {
-  private transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: MAILER_CONFIG.USER,
-      pass: MAILER_CONFIG.PASS,
-    },
-  });
+  private transporter = nodemailer.createTransport(
+    nodemailerSendgrid({
+      apiKey: MAILER_CONFIG.PASS,
+    })
+  );
 
   sendEmail({
     destinyEmail,
@@ -41,7 +41,7 @@ export class MailerInfraService implements IEmailService {
     attachments?: Attachment[];
   }) {
     const mailOptions = {
-      from: MAILER_CONFIG.USER,
+      from: MAILER_CONFIG.CONTACT_US_EMAIL,
       to: destinyEmail,
       subject: subject,
       html: html,
@@ -53,7 +53,7 @@ export class MailerInfraService implements IEmailService {
         if (process.env.NODE_ENV != 'test') console.log(error);
       } else {
         if (process.env.NODE_ENV != 'test') {
-          console.log('Email sent: ' + info.response);
+          console.log('EMAIL ENVIADO -->', new Date().toLocaleString());
         }
       }
     });

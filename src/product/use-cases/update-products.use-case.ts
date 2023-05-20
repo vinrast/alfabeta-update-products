@@ -736,10 +736,9 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
     });
     this.mailerService.sendEmail({
       destinyEmail: [
-        'vinrast@gmail.com',
         'diego.carciente@pharol.cl',
-        // 'sistemas@benvida.com.ar',
-        // 'pmartinez@benvida.com.ar',
+        'sistemas@benvida.com.ar',
+        'pmartinez@benvida.com.ar',
       ],
       html: templateMail,
       subject: 'Resultados de la actualización de productos',
