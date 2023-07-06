@@ -14,7 +14,7 @@ export class CreateProductUseCase implements ICreateProductUseCase {
       product instanceof ProductModel
         ? product
         : ProductMapper.toDomain(product);
-
+    product.price = product.status === 'A' ? product.price : 0;
     try {
       return await this.createProductRepository.create(
         productModel,

@@ -1,9 +1,9 @@
 import { IUpdateBaseRepository } from '@src/base/protocols';
-import { removeFileHelper } from './../../shared/utils/helpers/remove-file-helper';
-import { TransactionBuilder } from './../../shared/database/transaction-builder';
+import { removeFileHelper } from '@src/shared/utils/helpers/remove-file-helper';
+import { TransactionBuilder } from '@src/shared/database/transaction-builder';
 import { ProductMapper } from './../product.mapper';
-import { LaboratoryMapper } from './../../laboratory/laboratory.mapper';
-import { ControlMapper } from './../../control/control.mapper';
+import { LaboratoryMapper } from '@src/laboratory/laboratory.mapper';
+import { ControlMapper } from '@src/control/control.mapper';
 import { convertBase64ToFile } from '@src/shared/utils/helpers/base64-file-converter';
 import { ISoapService } from '@src/shared/services/protocols';
 import {
@@ -632,6 +632,23 @@ export class UpdateProductsUseCase implements IUpdateProductsUseCase {
         this.productsHomologatedNonUpgradeable.push(savedProduct);
         return false;
       }
+
+      if (product.status == 'I') {
+        await this.updateBaseRepository.update(
+          product.id_alfabeta,
+          { price: 0 },
+          transaction
+        );
+
+        await this.updateProductRepository.update(
+          savedProduct.id,
+          { price: 0 },
+          transaction
+        );
+
+        return false;
+      }
+
       if (
         product.price == savedProduct.price &&
         savedProduct.getDataValue('base').price
